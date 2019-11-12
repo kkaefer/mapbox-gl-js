@@ -472,7 +472,6 @@ class SourceCache extends Evented {
                 roundZoom: this._source.roundZoom,
                 reparseOverscaled: this._source.reparseOverscaled
             });
-
             if (this._source.hasTile) {
                 idealTileIDs = idealTileIDs.filter((coord) => (this._source.hasTile: any)(coord));
             }
