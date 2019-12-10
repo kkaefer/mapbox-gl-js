@@ -87,6 +87,10 @@ void main() {
     vec4 projected_pos = u_label_plane_matrix * vec4(a_projected_pos.xy, 0.0, 1.0);
     gl_Position = u_coord_matrix * vec4(projected_pos.xy / projected_pos.w + rotation_matrix * (a_offset / 32.0 * max(a_minFontScale, fontScale) + a_pxoffset / 16.0), 0.0, 1.0);
 
+    // Depth value is always set to zero even for points behind the camera.
+    // Disable rendering of these points by setting their depth to be < -1.0
+    gl_Position.z = mix(-2.0 * gl_Position.w, 0.0, float(projected_pos.w > 0.0));
+
     v_tex = a_tex / u_texsize;
     vec2 fade_opacity = unpack_opacity(a_fade_opacity);
     float fade_change = fade_opacity[1] > 0.5 ? u_fade_change : -u_fade_change;
