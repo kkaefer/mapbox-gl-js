@@ -281,8 +281,9 @@ class Transform {
         const numTiles = Math.pow(2, z);
         const centerPoint = new Point(numTiles * centerCoord.x, numTiles * centerCoord.y);
         const cameraFrustum = Frustum.fromInvProjectionMatrix(this.invProjMatrix, this.worldSize, z);
+        const lodPitchThreshold = 60.0;
 
-        if (this.pitch <= 60.0)
+        if (this.pitch <= lodPitchThreshold)
             minZoom = z;
 
         // There should always be a certain number of maximum zoom level tiles surrounding the center location
@@ -301,7 +302,7 @@ class Transform {
         };
 
         // Do a depth-first traversal to find visible tiles and proper levels of detail
-        const stack = [];
+        let stack = [];
         const result = [];
         const maxZoom = z;
         const overscaledZ = options.reparseOverscaled ? actualZ : z;
@@ -315,6 +316,19 @@ class Transform {
         }
 
         stack.push(newRootTile(0));
+
+        if (this.pitch > lodPitchThreshold) {
+            // Implement a simple mipmapping scheme by always streaming in level 0 tiles.
+            // These tiles act as fallbacks during camera movement when accurate data might not be yet available
+            stack = stack.filter(tile => tile.aabb.intersects(cameraFrustum) !== 'none');
+
+            stack.forEach(tile => {
+                result.push({
+                    tileID: new OverscaledTileID(tile.zoom, tile.wrap, tile.zoom, tile.x, tile.y),
+                    distanceSq: 0.0
+                });
+            })
+        }
 
         // Stream position will determine the "center of the streaming",
         // ie. where the most detailed tiles are loaded.
